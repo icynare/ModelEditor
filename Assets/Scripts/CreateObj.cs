@@ -32,12 +32,11 @@ public class CreateObj : MonoBehaviour {
         }
 	}
 
-    private GameObject CreateCylinder(float radius, int angle, float height)
+    public GameObject CreateCylinder(float radius, int angle, float height)
     {
         GameObject go = new GameObject("Cylinder");
-        go.transform.SetParent(transform);
-        MeshFilter mf = go.AddComponent<MeshFilter>();
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
+        //go.transform.SetParent(transform);
+        m_FirstMat = Resources.Load<Material>("Material/first");
 
         int verLen = 6 * (_parts + 2);
         Vector3[] vertices = new Vector3[verLen];
@@ -123,10 +122,21 @@ public class CreateObj : MonoBehaviour {
         normals[verLen - 2].Set(curX, 0, curZ);
         normals[verLen - 1].Set(curX, 0, curZ);
 
+        Mesh mesh;
 
-        mf.mesh.vertices = vertices;
-        mf.mesh.triangles = triangles;
-        mf.mesh.normals = normals;
+        MeshFilter mf = go.AddComponent<MeshFilter>();
+        MeshRenderer mr = go.AddComponent<MeshRenderer>();
+#if UNITY_EDITOR
+        mf.sharedMesh = new Mesh();
+        Mesh meshCopy = Mesh.Instantiate(mf.sharedMesh) as Mesh;
+        mesh = mf.mesh = meshCopy;
+#else
+        mesh = mf.mesh;
+#endif
+
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.normals = normals;
         mr.material = m_FirstMat;
         //mf.mesh.RecalculateNormals();
 
