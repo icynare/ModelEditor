@@ -3,15 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public enum PARTS
-{
-    ONE,
-    TWO,
-    THREE,
-    FOUR,
-    SIX
-}
-
 public class ModelWindow : EditorWindow {
 
     private GameObject parentObj;
@@ -35,6 +26,10 @@ public class ModelWindow : EditorWindow {
 
     private List<GameObject> objList;
     private string[] objName = { "Sector", "Cylinder", "Cube" };
+    private const int MAX_COUNT = 200;
+    private string[] objThickArr = new string[MAX_COUNT];
+    private string[] objAngleArr = new string[MAX_COUNT];
+    private PARTS[] objPartsArr = new PARTS[MAX_COUNT];
 
     private ObjSaver objSaver;
     private ObjDataBase objData;
@@ -68,6 +63,7 @@ public class ModelWindow : EditorWindow {
         objSaver = new ObjSaver();
         objSaver.Init();
         objData = objSaver.Load();
+        SetArrData();
 
         cubePrefab = Resources.Load<GameObject>("Models/Cube");
         cylinderPrefab = Resources.Load<GameObject>("Models/Cylinder");
@@ -221,19 +217,19 @@ public class ModelWindow : EditorWindow {
             EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.ObjectField(objList[i].name + ":", objList[i], typeof(GameObject), false, GUILayout.Width(300));
-            parts = (PARTS)EditorGUILayout.EnumPopup(parts, GUILayout.Width(70));
+            objPartsArr[i] = (PARTS)EditorGUILayout.EnumPopup(objPartsArr[i], GUILayout.Width(70));
+            objThickArr[i] = GUILayout.TextField(objThickArr[i], GUILayout.Width(70));
 
-            string thick = GetThick(objList[i]).ToString();
-            string thickStr = thick;
-            thickStr = GUILayout.TextField(thickStr, GUILayout.Width(labelWidth));
-            SetThick(objList[i], float.Parse(thickStr));
-
-            if(objList[i].tag == "Sector")
+            if (objList[i].tag == "Sector")
             {
-                
+                objAngleArr[i] = GUILayout.TextField(objAngleArr[i], GUILayout.Width(70));
+            }
+            else
+            {
+                GUILayout.Label("无", GUILayout.Width(70));
             }
 
-            if(GUILayout.Button("删除"))
+            if (GUILayout.Button("删除"))
             {
                 RemoveAction(i);
                 i--;
@@ -243,6 +239,15 @@ public class ModelWindow : EditorWindow {
         }
 
         EditorGUILayout.EndVertical();
+
+        if (GUILayout.Button("保存更改", GUILayout.Height(35)))
+        {
+            for(int i = 0; i < objData.modelList.Count; i++)
+            {
+                objData.modelList[i].SetArg(objPartsArr[i], float.Parse(objThickArr[i]), float.Parse(objAngleArr[i]));
+            }
+            objSaver.ChangeData(objData);
+        }
 
 #endregion
 
@@ -260,7 +265,8 @@ public class ModelWindow : EditorWindow {
         {
             objData = new ObjDataBase();
         }
-        objData.modelList.Add(new ModelData(mType, 1, 1, 1));
+        objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 1));
+        SetArrData();
         objSaver.ChangeData(objData);
     }
 
@@ -272,6 +278,22 @@ public class ModelWindow : EditorWindow {
         }
         DestroyImmediate(objList[index]);
         objList.RemoveAt(index);
+        objData.modelList.RemoveAt(index);
+        SetArrData();
+        objSaver.ChangeData(objData);
+    }
+
+    private void SetArrData()
+    {
+        if (objData != null)
+        {
+            for (int i = 0; i < objData.modelList.Count; i++)
+            {
+                objThickArr[i] = objData.modelList[i].thick.ToString();
+                objAngleArr[i] = objData.modelList[i].angle.ToString();
+                objPartsArr[i] = objData.modelList[i].parts;
+            }
+        }
     }
 
     private float GetThick(GameObject obj)

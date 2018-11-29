@@ -11,17 +11,33 @@ public enum ModelType
     Cube
 }
 
+public enum PARTS
+{
+    ONE,
+    TWO,
+    THREE,
+    FOUR,
+    SIX
+}
+
 [System.Serializable]
 public class ModelData
 {
     public ModelType modelType;
-    public int parts;
+    public PARTS parts;
     public float thick;
     public float angle;
 
-    public ModelData(ModelType mType, int pt, int thi, int ang)
+    public ModelData(ModelType mType, PARTS pt, float thi, float ang)
     {
         modelType = mType;
+        parts = pt;
+        thick = thi;
+        angle = ang;
+    }
+
+    public void SetArg(PARTS pt, float thi, float ang)
+    {
         parts = pt;
         thick = thi;
         angle = ang;
