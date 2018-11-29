@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CreateObj : MonoBehaviour {
+public class CreateObj {
 
     public Material m_FirstMat;
 
@@ -142,7 +142,7 @@ public class CreateObj : MonoBehaviour {
 
         MeshCollider meshCollider = go.AddComponent<MeshCollider>();
         meshCollider.convex = true;
-
+        meshCollider.isTrigger = true;
 
         return go;
     }
