@@ -77,9 +77,9 @@ public class ObjDataBase
 
 public class ObjSaver {
 
-    private string PLATFORMPATH = "";
-    public string FILEPATH = "/Obj";
-    public string FILENAME = "/obj.gd";
+    public static string PLATFORMPATH = "";
+    public static string FILEPATH = "/Obj";
+    public static string FILENAME = "/obj.gd";
     private string path;
 
     public ObjDataBase objDataBase;
@@ -121,11 +121,13 @@ public class ObjSaver {
         file.Close();
     }
 
-    public void DeleteData()
+    public static void DeleteData()
     {
-        path = PLATFORMPATH + FILEPATH + FILENAME;
+        PLATFORMPATH = Application.streamingAssetsPath;
+        string path = PLATFORMPATH + FILEPATH + FILENAME;
         if (File.Exists(path))
         {
+            Debug.Log(">>>删除：" + path);
             File.Delete(path);
         }
     }

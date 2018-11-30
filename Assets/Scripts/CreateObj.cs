@@ -6,7 +6,7 @@ public class CreateObj {
 
     public Material m_FirstMat;
 
-    private float _radius = 2.5f;
+    public static float Radius = 2.5f;
     private int _angle = 120;
     private int _parts = 40;
     private float _height = 1;
@@ -18,7 +18,7 @@ public class CreateObj {
 
 	// Use this for initialization
 	void Start () {
-        _cylinder = CreateCylinder(_radius, _angle, _height);
+        _cylinder = CreateCylinder(Radius, _angle, _height);
         _cylinder.transform.localPosition = new Vector3(0, 5, 0);
         GameObject obj = CreateCylinder(2, 90, 5f);
         obj.transform.localPosition = new Vector3(0, -3, 0);
@@ -32,9 +32,12 @@ public class CreateObj {
         }
 	}
 
-    public GameObject CreateCylinder(float radius, int angle, float height)
+    public GameObject CreateCylinder(float radius, int angle, float height, GameObject go = null)
     {
-        GameObject go = new GameObject("Cylinder");
+        if (go == null)
+        {
+            go = new GameObject("Sector");
+        }
         //go.transform.SetParent(transform);
         m_FirstMat = Resources.Load<Material>("Material/first");
 
@@ -123,9 +126,18 @@ public class CreateObj {
         normals[verLen - 1].Set(curX, 0, curZ);
 
         Mesh mesh;
+        MeshFilter mf;
+        MeshRenderer mr;
+        if (go.GetComponent<MeshFilter>() == null)
+            mf = go.AddComponent<MeshFilter>();
+        else
+            mf = go.GetComponent<MeshFilter>();
 
-        MeshFilter mf = go.AddComponent<MeshFilter>();
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
+        if (go.GetComponent<MeshRenderer>() == null)
+            mr = go.AddComponent<MeshRenderer>();
+        else
+            mr = go.GetComponent<MeshRenderer>();
+
 #if UNITY_EDITOR
         mf.sharedMesh = new Mesh();
         Mesh meshCopy = Mesh.Instantiate(mf.sharedMesh) as Mesh;
@@ -139,10 +151,18 @@ public class CreateObj {
         mesh.normals = normals;
         mr.material = m_FirstMat;
         //mf.mesh.RecalculateNormals();
+        MeshCollider curCollider = go.GetComponent<MeshCollider>();
+        if (curCollider != null)
+        {
+            curCollider.sharedMesh = mesh;
+        }
 
-        MeshCollider meshCollider = go.AddComponent<MeshCollider>();
-        meshCollider.convex = true;
-        meshCollider.isTrigger = true;
+        else
+        {
+            MeshCollider meshCollider = go.AddComponent<MeshCollider>();
+            meshCollider.convex = true;
+            meshCollider.isTrigger = true;
+        }
 
         return go;
     }

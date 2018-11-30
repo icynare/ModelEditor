@@ -30,6 +30,9 @@ public class Ball : MonoBehaviour {
         upBorder = PlayerPrefs.GetFloat(PrefConstans.UP_DISTANCE, 5);
         upSpeed = PlayerPrefs.GetFloat(PrefConstans.UP_SPEED, 4);
         lowestHeight = localPos.y;
+
+        m_Camera.transform.localPosition = new Vector3(0, 11f, m_Camera.transform.localPosition.z);
+        m_Pillar.transform.localPosition = new Vector3(0, 6f, 0);
     }
 
 	private void FixedUpdate()
