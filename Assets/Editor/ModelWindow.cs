@@ -75,12 +75,50 @@ public class ModelWindow : EditorWindow {
         cylinderPrefab = Resources.Load<GameObject>("Models/Cylinder");
 
         objList = new List<GameObject>();
-        for (int i = 0; i < parentObj.transform.childCount; i++)
-        {
-            objList.Add(parentObj.transform.GetChild(i).gameObject);
-        }
+        InitSavedObj();
+        //for (int i = 0; i < parentObj.transform.childCount; i++)
+        //{
+        //    objList.Add(parentObj.transform.GetChild(i).gameObject);
+        //}
 
         objCreater = new CreateObj();
+    }
+
+    private void InitSavedObj()
+    {
+        if (objData == null)
+            return;
+        for (int i = 0; i < objData.modelList.Count; i ++)
+        {
+            GenerateObj(objData.modelList[i]);
+        }
+    }
+
+    private void GenerateObj(ModelData data)
+    {
+        switch (data.modelType)
+        {
+            case ModelType.Sector:
+                {
+                    GameObject sector = objCreater.CreateCylinder(2.5f, 120, 1);
+                    CreateNewModel(ModelType.Sector, sector, false);
+                    SetNewParts(sector, data.parts);
+                    break;
+                }
+            case ModelType.Cylinder:
+                {
+                    GameObject cy = Instantiate(cylinderPrefab);
+                    float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
+                    cy.transform.localScale = new Vector3(1, curWidth / 2, 1);
+                    cy.transform.localPosition += new Vector3(curWidth / 2, 0, 0);
+                    CreateNewModel(ModelType.Cylinder, cy, true);
+                    break;
+                }
+            case ModelType.Cube:
+                {
+                    break;
+                }
+        }
     }
 
     private void OnGUI()
@@ -197,8 +235,8 @@ public class ModelWindow : EditorWindow {
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("创建扇形", GUILayout.Height(35)))
         {
-            GameObject sector = objCreater.CreateCylinder(2.5f, 150, 1);
-            CreateNewModel(ModelType.Sector, sector);
+            GameObject sector = objCreater.CreateCylinder(2.5f, 120, 1);
+            CreateNewModel(ModelType.Sector, sector, true);
         }
         if (GUILayout.Button("创建圆柱", GUILayout.Height(35)))
         {
@@ -206,7 +244,7 @@ public class ModelWindow : EditorWindow {
             float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
             cy.transform.localScale = new Vector3(1, curWidth / 2, 1);
             cy.transform.localPosition += new Vector3(curWidth / 2, 0, 0);
-            CreateNewModel(ModelType.Cylinder, cy);
+            CreateNewModel(ModelType.Cylinder, cy, true);
         }
         if (GUILayout.Button("创建条形", GUILayout.Height(35)))
         {
@@ -214,7 +252,7 @@ public class ModelWindow : EditorWindow {
             float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
             cube.transform.localScale = new Vector3(curWidth, 1, 1);
             cube.transform.localPosition += new Vector3(curWidth / 2, 0, 0);
-            CreateNewModel(ModelType.Cube, cube);
+            CreateNewModel(ModelType.Cube, cube, true);
         }
         EditorGUILayout.EndHorizontal();
 #endregion
@@ -311,7 +349,7 @@ public class ModelWindow : EditorWindow {
     }
 
     //创建新模型
-    private void CreateNewModel(ModelType mType, GameObject obj)
+    private void CreateNewModel(ModelType mType, GameObject obj, bool needSave)
     {
         obj.transform.SetParent(parentObj.transform);
 
@@ -319,13 +357,17 @@ public class ModelWindow : EditorWindow {
         obj.tag = objName[(int)mType];
 
         objList.Add(obj);
-        if(objData == null)
+
+        if (needSave)
         {
-            objData = new ObjDataBase();
+            if (objData == null)
+            {
+                objData = new ObjDataBase();
+            }
+            objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 120));
+            SetArrData();
+            objSaver.ChangeData(objData);
         }
-        objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 120));
-        SetArrData();
-        objSaver.ChangeData(objData);
 
         float curGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, 5);
         obj.transform.localPosition = new Vector3(obj.transform.localPosition.x, -(curGap * (objList.Count - 1)), 0);
