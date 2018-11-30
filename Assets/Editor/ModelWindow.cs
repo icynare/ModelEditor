@@ -266,10 +266,17 @@ public class ModelWindow : EditorWindow {
         {
             for(int i = 0; i < objData.modelList.Count; i++)
             {
+                //修改等分
                 if(objData.modelList[i].parts != objPartsArr[i])
                 {
                     Debug.Log(">>>parts变化" + i + "::" + objData.modelList[i].parts + "->" + objPartsArr[i]);
+                    //GameObject newpart = Instantiate(objList[i]);
+                    //newpart.transform.SetParent(objList[i].transform);
+                    //newpart.transform.RotateAround(Vector3.zero, Vector3.up, 180);
+                    SetNewParts(objList[i], objPartsArr[i]);
                 }
+
+                //修改厚度
                 if(Mathf.Abs(objData.modelList[i].thick - float.Parse(objThickArr[i])) > float.Epsilon)
                 {
                     Debug.Log(">>>thick变化" + i + "::" + objData.modelList[i].thick + "->" + objThickArr[i]);
@@ -283,6 +290,8 @@ public class ModelWindow : EditorWindow {
                         objList[i].transform.localScale = new Vector3(objList[i].transform.localScale.x, curThickness, objList[i].transform.localScale.z);
                     }
                 }
+
+                //修改角度
                 if(Mathf.Abs(objData.modelList[i].angle - float.Parse(objAngleArr[i])) > float.Epsilon)
                 {
                     Debug.Log(">>>angle变化" + i + "::" + objData.modelList[i].angle + "->" + objAngleArr[i]);
@@ -314,7 +323,7 @@ public class ModelWindow : EditorWindow {
         {
             objData = new ObjDataBase();
         }
-        objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 1));
+        objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 120));
         SetArrData();
         objSaver.ChangeData(objData);
 
@@ -382,6 +391,38 @@ public class ModelWindow : EditorWindow {
                 objList[i].transform.localPosition = new Vector3(curWidth / 2, objList[i].transform.localPosition.y, objList[i].transform.localPosition.z);
             }
         }
+    }
+
+    private void SetNewParts(GameObject obj, PARTS part)
+    {
+        for (int i = obj.transform.childCount - 1; i >= 0; i--)
+        {
+            DestroyImmediate(obj.transform.GetChild(i).gameObject);
+        }
+        GameObject template = Instantiate(obj);
+        GameObject emptyTemp = Resources.Load<GameObject>("Models/Empty");
+
+        int[] arrs = { 0, 1, 2, 3, 5 };
+        int tempP;
+        tempP = arrs[(int)part];
+        for (int i = 0; i < tempP; i++)
+        {
+            GameObject newpart = Instantiate(template);
+            GameObject empty = Instantiate(emptyTemp);
+            empty.transform.SetParent(parentObj.transform);
+            newpart.transform.SetParent(empty.transform);
+            if (obj.tag == "Sector")
+            {
+                newpart.transform.localRotation = Quaternion.Euler(0, (360 / (tempP + 1)) * (i + 1), 0);
+            }
+            else
+            {
+                newpart.transform.RotateAround(pillar.position, Vector3.up, (360 / (tempP + 1)) * (i + 1));
+            }
+            empty.transform.SetParent(obj.transform);
+        }
+
+        DestroyImmediate(template);
     }
 
     private void SetArrData()
