@@ -87,7 +87,11 @@ public class ModelWindow : EditorWindow {
     private void InitSavedObj()
     {
         if (objData == null)
+        {
+            Debug.Log(">>>objData is Null");
             return;
+        }
+        Debug.Log("objData.modelList.Count" + objData.modelList.Count);
         for (int i = 0; i < objData.modelList.Count; i ++)
         {
             GenerateObj(objData.modelList[i]);

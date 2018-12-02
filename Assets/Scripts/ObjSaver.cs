@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using SimpleJSON;
 
 public enum ModelType
 {
@@ -79,7 +81,7 @@ public class ObjSaver {
 
     public static string PLATFORMPATH = "";
     public static string FILEPATH = "/Obj";
-    public static string FILENAME = "/obj.gd";
+    public static string FILENAME = "/model.txt";
     private string path;
 
     public ObjDataBase objDataBase;
@@ -100,12 +102,18 @@ public class ObjSaver {
         }
         if (File.Exists(path))
         {
-            //读取数据
-            BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Open(path, FileMode.Open);
-            objDataBase = (ObjDataBase)bf.Deserialize(file);
-            objDataBase.Print();
-            file.Close();
+            //二进制格式读取
+            //BinaryFormatter bf = new BinaryFormatter();
+            //FileStream file = File.Open(path, FileMode.Open);
+            //objDataBase = (ObjDataBase)bf.Deserialize(file);
+            //objDataBase.Print();
+            //file.Close();
+
+            //Json格式读取
+            string str = File.ReadAllText(path);
+            Debug.Log(">>>TXT文本：" + str);
+            JSONNode json = JSON.Parse(str.ToString());
+            Debug.Log(">>>Json:" + json["id"]);
             return objDataBase;
         }
 
@@ -115,10 +123,35 @@ public class ObjSaver {
     public void Save()
     {
         path = PLATFORMPATH + FILEPATH + FILENAME;
-        BinaryFormatter bf = new BinaryFormatter();
-        FileStream file = File.Open(path, FileMode.OpenOrCreate);
-        bf.Serialize(file, objDataBase);
-        file.Close();
+
+        //二进制格式保存
+        //BinaryFormatter bf = new BinaryFormatter();
+        //FileStream file = File.Open(path, FileMode.OpenOrCreate);
+        //bf.Serialize(file, objDataBase);
+        //file.Close();
+
+        //Json保存
+        JSONArray array = new JSONArray();
+        ModelData tempData;
+        StringBuilder sb = new StringBuilder();
+        string tempStr = "";
+        for (int i = 0; i < objDataBase.modelList.Count; i++)
+        {
+            tempData = objDataBase.modelList[i];
+            tempStr = string.Format("\"type\":{0},\"parts\":{1},\"thick\":{2},\"angle\":{3}",
+                (int)tempData.modelType,
+                (int)tempData.parts,
+                tempData.thick,
+                tempData.angle);
+            tempStr = "{" + tempStr + "}";
+            JSONNode node = JSON.Parse(tempStr);
+            array.Add(node);
+        }
+        string str = array.ToString();
+        str = "{\"list\":" + str + "}";
+        Debug.Log(">>>保存的JSonSTR：" + str);
+        File.WriteAllText(path, str);
+      
     }
 
     public static void DeleteData()
