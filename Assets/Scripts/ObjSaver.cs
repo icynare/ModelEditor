@@ -29,25 +29,28 @@ public class ModelData
     public PARTS parts;
     public float thick;
     public float angle;
+    public float width;
 
-    public ModelData(ModelType mType, PARTS pt, float thi, float ang)
+    public ModelData(ModelType mType, PARTS pt, float thi, float ang, float wid)
     {
         modelType = mType;
         parts = pt;
         thick = thi;
         angle = ang;
+        width = wid;
     }
 
-    public void SetArg(PARTS pt, float thi, float ang)
+    public void SetArg(PARTS pt, float thi, float ang, float wid)
     {
         parts = pt;
         thick = thi;
         angle = ang;
+        width = wid;
     }
 
     public void Print()
     {
-        Debug.Log(string.Format("类型：{0},等分：{1},厚度：{2},角度：{3}", modelType, parts, thick, angle));
+        Debug.Log(string.Format("类型：{0},等分：{1},厚度：{2},角度：{3}, 宽度：{4}", modelType, parts, thick, angle, width));
     }
 }
 
@@ -113,7 +116,16 @@ public class ObjSaver {
             string str = File.ReadAllText(path);
             Debug.Log(">>>TXT文本：" + str);
             JSONNode json = JSON.Parse(str.ToString());
-            Debug.Log(">>>Json:" + json["id"]);
+            JSONArray array = json["list"].AsArray;
+            for (int i = 0; i < array.Count; i++)
+            {
+                objDataBase.modelList.Add(new ModelData(
+                    (ModelType)(array[i]["type"].AsInt),
+                    (PARTS)(array[i]["parts"].AsInt),
+                    array[i]["thick"].AsFloat,
+                    array[i]["angle"].AsFloat,
+                    array[i]["width"].AsFloat));
+            }
             return objDataBase;
         }
 
@@ -138,11 +150,12 @@ public class ObjSaver {
         for (int i = 0; i < objDataBase.modelList.Count; i++)
         {
             tempData = objDataBase.modelList[i];
-            tempStr = string.Format("\"type\":{0},\"parts\":{1},\"thick\":{2},\"angle\":{3}",
-                (int)tempData.modelType,
-                (int)tempData.parts,
-                tempData.thick,
-                tempData.angle);
+            tempStr = string.Format("\"type\":{0},\"parts\":{1},\"thick\":{2},\"angle\":{3},\"width\":{4}",
+                                    (int)tempData.modelType,
+                                    (int)tempData.parts,
+                                    tempData.thick,
+                                    tempData.angle,
+                                    tempData.width);
             tempStr = "{" + tempStr + "}";
             JSONNode node = JSON.Parse(tempStr);
             array.Add(node);

@@ -23,7 +23,7 @@ public class ParentObj : MonoBehaviour {
         rotateDir = new List<int>();
         _pillar = GameObject.Find("Pillar").transform;
 
-        _rotateSpeed = PlayerPrefs.GetFloat(PrefConstans.RORATE_SPEED, 1);
+        _rotateSpeed = PlayerPrefs.GetFloat(PrefConstans.RORATE_SPEED, PrefConstans.DEFAULT_SPEED);
 
         GameObject curObj = null;
         float curRotate = 0;

@@ -23,6 +23,7 @@ public class ModelWindow : EditorWindow {
     private string newUpSpeed;
     private string newUpHeight;
     private string newGap;
+    private string newUpSingle;
 
     private GameObject cubePrefab;
     private GameObject cylinderPrefab;
@@ -32,6 +33,7 @@ public class ModelWindow : EditorWindow {
     private const int MAX_COUNT = 200;
     private string[] objThickArr = new string[MAX_COUNT];
     private string[] objAngleArr = new string[MAX_COUNT];
+    private string[] objWidthArr = new string[MAX_COUNT];
     private PARTS[] objPartsArr = new PARTS[MAX_COUNT];
 
     private ObjSaver objSaver;
@@ -59,12 +61,13 @@ public class ModelWindow : EditorWindow {
         ballScale = ball.transform.localScale.x;
         newScale = ballScale.ToString();
 
-        newSpeed = PlayerPrefs.GetFloat(PrefConstans.RORATE_SPEED, 1).ToString();
-        newWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f).ToString();
-        newGravity = PlayerPrefs.GetFloat(PrefConstans.GRAVITY, 15).ToString();
-        newUpSpeed = PlayerPrefs.GetFloat(PrefConstans.UP_SPEED, 4).ToString();
-        newUpHeight = PlayerPrefs.GetFloat(PrefConstans.UP_DISTANCE, 5).ToString();
-        newGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, 5).ToString();
+        newSpeed = PlayerPrefs.GetFloat(PrefConstans.RORATE_SPEED, PrefConstans.DEFAULT_SPEED).ToString();
+        newWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, PrefConstans.DEFAULT_WIDTH).ToString();
+        newGravity = PlayerPrefs.GetFloat(PrefConstans.GRAVITY, PrefConstans.DEFAULT_GRAVITY).ToString();
+        newUpSpeed = PlayerPrefs.GetFloat(PrefConstans.UP_SPEED, PrefConstans.DEFAULT_UP_SPEED).ToString();
+        newUpHeight = PlayerPrefs.GetFloat(PrefConstans.UP_DISTANCE, PrefConstans.DEFAULT_UP_DISTANCE).ToString();
+        newGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, PrefConstans.DEFAULT_GAP).ToString();
+        newUpSingle = PlayerPrefs.GetFloat(PrefConstans.UP_SINGLE, PrefConstans.DEFAULT_UP_SINGLE).ToString();
 
         objSaver = new ObjSaver();
         objSaver.Init();
@@ -74,6 +77,8 @@ public class ModelWindow : EditorWindow {
         cubePrefab = Resources.Load<GameObject>("Models/Cube");
         cylinderPrefab = Resources.Load<GameObject>("Models/Cylinder");
 
+        objCreater = new CreateObj();
+
         objList = new List<GameObject>();
         InitSavedObj();
         //for (int i = 0; i < parentObj.transform.childCount; i++)
@@ -81,7 +86,6 @@ public class ModelWindow : EditorWindow {
         //    objList.Add(parentObj.transform.GetChild(i).gameObject);
         //}
 
-        objCreater = new CreateObj();
     }
 
     private void InitSavedObj()
@@ -92,6 +96,14 @@ public class ModelWindow : EditorWindow {
             return;
         }
         Debug.Log("objData.modelList.Count" + objData.modelList.Count);
+
+        for (int i = parentObj.transform.childCount - 1; i >= 0; i--)
+        {
+            DestroyImmediate(parentObj.transform.GetChild(i).gameObject);
+        }
+        camera.transform.localPosition = new Vector3(0, Ball.CAMERA_INIT_HEIGHT, camera.transform.localPosition.z);
+        pillar.transform.localPosition = new Vector3(0, Ball.PILLAR_INIT_HEIGHT, 0);
+
         for (int i = 0; i < objData.modelList.Count; i ++)
         {
             GenerateObj(objData.modelList[i]);
@@ -100,11 +112,12 @@ public class ModelWindow : EditorWindow {
 
     private void GenerateObj(ModelData data)
     {
+        float width = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, PrefConstans.DEFAULT_WIDTH);
         switch (data.modelType)
         {
             case ModelType.Sector:
                 {
-                    GameObject sector = objCreater.CreateCylinder(2.5f, 120, 1);
+                    GameObject sector = objCreater.CreateCylinder(width, (int)data.angle, data.thick);
                     CreateNewModel(ModelType.Sector, sector, false);
                     SetNewParts(sector, data.parts);
                     break;
@@ -112,14 +125,18 @@ public class ModelWindow : EditorWindow {
             case ModelType.Cylinder:
                 {
                     GameObject cy = Instantiate(cylinderPrefab);
-                    float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
-                    cy.transform.localScale = new Vector3(1, curWidth / 2, 1);
-                    cy.transform.localPosition += new Vector3(curWidth / 2, 0, 0);
-                    CreateNewModel(ModelType.Cylinder, cy, true);
+                    cy.transform.localScale = new Vector3(1, width / 2, 1);
+                    cy.transform.localPosition += new Vector3(width / 2, 0, 0);
+                    CreateNewModel(ModelType.Cylinder, cy, false);
                     break;
                 }
             case ModelType.Cube:
                 {
+                    GameObject cube = Instantiate(cubePrefab);
+                    cube.transform.localScale = new Vector3(width, 1, 1);
+                    cube.transform.localPosition += new Vector3(width / 2, 0, 0);
+                    CreateNewModel(ModelType.Cube, cube, false);
+                    SetNewParts(cube, data.parts);
                     break;
                 }
         }
@@ -228,6 +245,19 @@ public class ModelWindow : EditorWindow {
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndHorizontal();
 
+        //单词起跳距离上限
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("单词弹跳距离上限:", GUILayout.Width(labelWidth));
+        newUpSingle = GUILayout.TextField(newUpSingle, GUILayout.Width(labelWidth));
+        if (GUILayout.Button("确认", GUILayout.Width(labelWidth)))
+        {
+            float temp = float.Parse(newUpSingle);
+            PlayerPrefs.SetFloat(PrefConstans.UP_SINGLE, temp);
+            PlayerPrefs.Save();
+        }
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+
         EditorGUILayout.EndVertical();
         #endregion
 
@@ -245,7 +275,7 @@ public class ModelWindow : EditorWindow {
         if (GUILayout.Button("创建圆柱", GUILayout.Height(35)))
         {
             GameObject cy = Instantiate(cylinderPrefab);
-            float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
+            float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, PrefConstans.DEFAULT_WIDTH);
             cy.transform.localScale = new Vector3(1, curWidth / 2, 1);
             cy.transform.localPosition += new Vector3(curWidth / 2, 0, 0);
             CreateNewModel(ModelType.Cylinder, cy, true);
@@ -253,7 +283,7 @@ public class ModelWindow : EditorWindow {
         if (GUILayout.Button("创建条形", GUILayout.Height(35)))
         {
             GameObject cube = Instantiate(cubePrefab);
-            float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
+            float curWidth = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, PrefConstans.DEFAULT_WIDTH);
             cube.transform.localScale = new Vector3(curWidth, 1, 1);
             cube.transform.localPosition += new Vector3(curWidth / 2, 0, 0);
             CreateNewModel(ModelType.Cube, cube, true);
@@ -273,6 +303,7 @@ public class ModelWindow : EditorWindow {
         GUILayout.Label("等分：", GUILayout.Width(70));
         GUILayout.Label("厚度：", GUILayout.Width(70));
         GUILayout.Label("角度：", GUILayout.Width(70));
+        GUILayout.Label("宽度：", GUILayout.Width(70));
 
         EditorGUILayout.EndHorizontal();
 
@@ -287,6 +318,15 @@ public class ModelWindow : EditorWindow {
             if (objList[i].tag == "Sector")
             {
                 objAngleArr[i] = GUILayout.TextField(objAngleArr[i], GUILayout.Width(70));
+            }
+            else
+            {
+                GUILayout.Label("无", GUILayout.Width(70));
+            }
+
+            if (objList[i].tag == "Cube")
+            {
+                objWidthArr[i] = GUILayout.TextField(objWidthArr[i], GUILayout.Width(70));
             }
             else
             {
@@ -339,11 +379,22 @@ public class ModelWindow : EditorWindow {
                     Debug.Log(">>>angle变化" + i + "::" + objData.modelList[i].angle + "->" + objAngleArr[i]);
                     if(objList[i].tag == "Sector")
                     {
-                        float radius = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, 2.5f);
+                        float radius = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_WIDTH, PrefConstans.DEFAULT_WIDTH);
                         objCreater.CreateCylinder(radius, int.Parse(objAngleArr[i]), float.Parse(objThickArr[i]), objList[i]);
                     }
                 }
-                objData.modelList[i].SetArg(objPartsArr[i], float.Parse(objThickArr[i]), float.Parse(objAngleArr[i]));
+
+                //修改宽度
+                if (Mathf.Abs(objData.modelList[i].width - float.Parse(objWidthArr[i])) > float.Epsilon)
+                {
+                    Debug.Log(">>>width变化" + i + "::" + objData.modelList[i].width + "->" + objWidthArr[i]);
+                    if (objList[i].tag == "Cube")
+                    {
+                        objList[i].transform.localScale = new Vector3(objList[i].transform.localScale.x, objList[i].transform.localScale.y, float.Parse(objWidthArr[i]));
+                    }
+                }
+
+                objData.modelList[i].SetArg(objPartsArr[i], float.Parse(objThickArr[i]), float.Parse(objAngleArr[i]), float.Parse(objWidthArr[i]));
             }
             objSaver.ChangeData(objData);
         }
@@ -368,12 +419,12 @@ public class ModelWindow : EditorWindow {
             {
                 objData = new ObjDataBase();
             }
-            objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 120));
+            objData.modelList.Add(new ModelData(mType, PARTS.ONE, 1, 120, 1));
             SetArrData();
             objSaver.ChangeData(objData);
         }
 
-        float curGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, 5);
+        float curGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, PrefConstans.DEFAULT_GAP);
         obj.transform.localPosition = new Vector3(obj.transform.localPosition.x, -(curGap * (objList.Count - 1)), 0);
         camera.localPosition -= new Vector3(0, curGap, 0);
         pillar.localPosition -= new Vector3(0, curGap, 0);
@@ -382,7 +433,7 @@ public class ModelWindow : EditorWindow {
     //删除模型
     private void RemoveAction(int index)
     {
-        float curGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, 5);
+        float curGap = PlayerPrefs.GetFloat(PrefConstans.GAMEOBJECT_GAP, PrefConstans.DEFAULT_GAP);
         for (int i = index + 1; i < objList.Count; i++)
         {
             objList[i].name = string.Format("{0:000}{1}", i, objList[i].name.Substring(3));
@@ -407,8 +458,8 @@ public class ModelWindow : EditorWindow {
         {
             objList[i].transform.localPosition = new Vector3(objList[i].transform.localPosition.x, -i * tGap, objList[i].transform.localPosition.z);
         }
-        camera.localPosition = new Vector3(0, 11 - tGap * objList.Count , camera.localPosition.z);
-        pillar.localPosition = new Vector3(0, 6 - tGap * objList.Count, 0);
+        camera.localPosition = new Vector3(0, Ball.CAMERA_INIT_HEIGHT - tGap * objList.Count , camera.localPosition.z);
+        pillar.localPosition = new Vector3(0, Ball.PILLAR_INIT_HEIGHT - tGap * objList.Count, 0);
     }
 
     //重设宽度
@@ -480,6 +531,7 @@ public class ModelWindow : EditorWindow {
                 objThickArr[i] = objData.modelList[i].thick.ToString();
                 objAngleArr[i] = objData.modelList[i].angle.ToString();
                 objPartsArr[i] = objData.modelList[i].parts;
+                objWidthArr[i] = objData.modelList[i].width.ToString();
             }
         }
     }
@@ -490,8 +542,8 @@ public class ModelWindow : EditorWindow {
     {
         if (EditorUtility.DisplayDialog("清空", "是否清空当前所有模型", "清空", "取消"))
         {
-            //DeleteMap(curMap);
-            PlayerPrefs.DeleteAll();
+            //PlayerPrefs.DeleteAll();
+
             Transform parent = GameObject.Find("Parent").transform;
             Transform camera = GameObject.Find("Main Camera").transform;
             Transform pillar = GameObject.Find("Pillar").transform;
@@ -500,8 +552,17 @@ public class ModelWindow : EditorWindow {
                 DestroyImmediate(parent.GetChild(i).gameObject);
             }
             ObjSaver.DeleteData();
-            camera.transform.localPosition = new Vector3(0, 11, camera.transform.localPosition.z);
-            pillar.transform.localPosition = new Vector3(0, 6, 0);
+            camera.transform.localPosition = new Vector3(0, Ball.CAMERA_INIT_HEIGHT, camera.transform.localPosition.z);
+            pillar.transform.localPosition = new Vector3(0, Ball.PILLAR_INIT_HEIGHT, 0);
+        }
+    }
+
+    [MenuItem("Tools/重置参数")]
+    public static void ClearPlayerPrefsData()
+    {
+        if(EditorUtility.DisplayDialog("重置参数", "是否重置当前公有参数", "重置", "取消"))
+        {
+            PlayerPrefs.DeleteAll();
         }
     }
 

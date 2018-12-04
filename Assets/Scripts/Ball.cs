@@ -22,24 +22,57 @@ public class Ball : MonoBehaviour {
     private float upBorder = 0;
     private float upSpeed = 0;
 
+    private float upBorderSingle = 2;
+    private float curUp = 0;
+
+    public static float CAMERA_INIT_HEIGHT = 6;
+    public static float PILLAR_INIT_HEIGHT = 1;
+    public static float BALL_INTI_HEIGHT = 5;
+
+    private float downGravity;
+    private float upGravity;
 
     public void Start()
     {
         localPos = gameObject.transform.localPosition;
-        grivity =  - PlayerPrefs.GetFloat(PrefConstans.GRAVITY, 15);
-        upBorder = PlayerPrefs.GetFloat(PrefConstans.UP_DISTANCE, 5);
-        upSpeed = PlayerPrefs.GetFloat(PrefConstans.UP_SPEED, 4);
+        downGravity =  - PlayerPrefs.GetFloat(PrefConstans.GRAVITY, PrefConstans.DEFAULT_GRAVITY);
+        upGravity =  - PlayerPrefs.GetFloat(PrefConstans.DOWN_GRAVITY, PrefConstans.DEFAULT_DOWN_GRAVITY);
+        upBorder = PlayerPrefs.GetFloat(PrefConstans.UP_DISTANCE, PrefConstans.DEFAULT_UP_DISTANCE);
+        upSpeed = PlayerPrefs.GetFloat(PrefConstans.UP_SPEED, PrefConstans.DEFAULT_UP_SPEED);
+        upBorderSingle = PlayerPrefs.GetFloat(PrefConstans.UP_SINGLE, PrefConstans.DEFAULT_UP_SINGLE);
         lowestHeight = localPos.y;
 
-        m_Camera.transform.localPosition = new Vector3(0, 11f, m_Camera.transform.localPosition.z);
-        m_Pillar.transform.localPosition = new Vector3(0, 6f, 0);
+        m_Camera.transform.localPosition = new Vector3(0, CAMERA_INIT_HEIGHT, m_Camera.transform.localPosition.z);
+        m_Pillar.transform.localPosition = new Vector3(0, PILLAR_INIT_HEIGHT, 0);
     }
+
+	private void Update()
+	{
+        //Debug.Log(">>>curSpeed" + curSpeed);
+        transform.Rotate(-curSpeed, 0, 0);
+	}
 
 	private void FixedUpdate()
 	{
+
         curHeight = curSpeed * Time.fixedDeltaTime + 0.5f * grivity * Mathf.Pow(Time.fixedDeltaTime, 2);
         curSpeed += grivity * Time.fixedDeltaTime;
         localPos.y += curHeight;
+
+        if (curSpeed > 0)
+        {
+            curUp += curHeight;
+            if(curUp > upBorderSingle)
+            {
+                curUp = 0;
+                curSpeed = 0;
+            }
+        }
+        else
+        {
+            curUp = 0;
+            grivity = downGravity;
+        }
 
         //判断上升边界
         if (localPos.y < lowestHeight)
@@ -64,6 +97,8 @@ public class Ball : MonoBehaviour {
     public void OnClickJump()
     {
         curSpeed = upSpeed;
+        curUp = 0;
+        grivity = upGravity;
     }
 
 }
